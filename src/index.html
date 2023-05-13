@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PAGE_TITLE</title>
+    <style>
+      @font-face {
+        font-family: "Dancing Script";
+        src: url("./font.ttf");
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: "Dancing Script", cursive;
+        background-color: black;
+        margin: 0;
+      }
+
+      h1 {
+        text-align: center;
+        color: white;
+        font-size: 5rem;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  </head>
+
+  <body>
+    <h1>We're coming soon</h1>
+    <div id="particles-js"></div>
+    <script>
+      window.onload = function () {
+        particlesJS.load("particles-js", "./particle.json");
+      };
+    </script>
+  </body>
+</html>
