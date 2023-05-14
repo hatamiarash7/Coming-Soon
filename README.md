@@ -9,7 +9,7 @@ It's a simple coming soon app in Docker.
 Run the Docker image and set a `PAGE_TITLE` environment variable for your final page's title:
 
 ```bash
-docker run -it -p 8080:80 -e PAGE_TITLE="My Title" hatamiarash7/coming-soon
+docker run -it -p 8080:80 -e PAGE_TITLE="My Title" -e NGINX_PORT=80 hatamiarash7/coming-soon
 ```
 
 Open <http://localhost:8080>.
