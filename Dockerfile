@@ -1,4 +1,4 @@
-FROM nginx:1.24.0-alpine
+FROM nginx:1.25.0-alpine
 
 ARG DATE_CREATED
 ARG APP_VERSION
