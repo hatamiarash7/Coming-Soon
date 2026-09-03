@@ -1,4 +1,4 @@
-FROM nginx:1.31.1-alpine
+FROM nginx:1.31.5-alpine
 
 ENV NGINX_USER=nginx
 ARG DATE_CREATED
