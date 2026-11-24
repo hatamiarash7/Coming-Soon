@@ -1,76 +1,79 @@
-name: Release
+name: Validate and release image
 
 on:
+  pull_request:
+  push:
+    branches: [main]
   release:
     types: [published]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: image-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
+env:
+  IMAGE: hatamiarash7/coming-soon
+
 jobs:
-  init:
-    name: 🚩 Initialize
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous workflow
-        uses: styfle/cancel-workflow-action@0.13.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          access_token: ${{ github.token }}
+          persist-credentials: false
+      - run: docker build -t coming-soon:check .
+      - run: sh tests/smoke.sh coming-soon:check
 
-  docker:
-    name: 🐳 Build Docker image
-    runs-on: ubuntu-26.04
-    needs: init
+  publish:
+    if: github.event_name == 'release'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          persist-credentials: false
+      - run: docker build -t coming-soon:check .
+      - name: Scan release candidate (amd64)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: coming-soon:check
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          limit-severities-for-sarif: true
+          ignore-unfixed: true
+          exit-code: "1"
 
-      - name: Get repository info
-        uses: gacts/github-slug@v1
-        id: slug
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4
-
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Login to Dockerhub
-        uses: docker/login-action@v4.5.2
+      - name: Upload scan report to GitHub code scanning
+        if: ${{ !cancelled() && hashFiles('trivy-results.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        with:
+          sarif_file: trivy-results.sarif
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=ref,event=tag,enable=${{ github.event.release.tag_name != 'latest' }}
+            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Get Current Date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
-      - name: Build & Push Docker image
-        uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          file: Dockerfile
-          push: true
           platforms: linux/amd64,linux/386,linux/arm64,linux/arm/v6,linux/arm/v7
-          build-args: |
-            APP_VERSION=${{ steps.slug.outputs.version }}"
-            DATE_CREATED=${{ steps.date.outputs.date }}
-          tags: |
-            hatamiarash7/coming-soon:${{ steps.slug.outputs.version }}
-            hatamiarash7/coming-soon:latest
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: hatamiarash7/coming-soon:latest
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
-          format: "template"
-          template: "@/contrib/sarif.tpl"
-          output: "trivy-results.sarif"
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4.37.4
-        with:
-          sarif_file: "trivy-results.sarif"
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
