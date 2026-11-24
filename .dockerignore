@@ -1,3 +1,8 @@
-README.md
-.git*
-LICENSE
+**
+!Dockerfile
+!config/
+!config/*.conf
+!config/*.template
+!config/*.envsh
+!src/
+!src/**

@@ -1,33 +1,22 @@
-FROM nginx:1.31.10-alpine
+FROM nginx:1.31.10-alpine@sha256:aceb952b920393b7d0bc7b978927fc283370bea89fb082c6fef0ce18c60f96a9
 
-ENV NGINX_USER=nginx
-ARG DATE_CREATED
-ARG APP_VERSION
+LABEL org.opencontainers.image.title="Coming Soon" \
+    org.opencontainers.image.description="A self-contained pre-launch landing page served by Nginx" \
+    org.opencontainers.image.authors="Arash Hatami <hatamiarash7@gmail.com>" \
+    org.opencontainers.image.source="https://github.com/hatamiarash7/coming-soon" \
+    org.opencontainers.image.licenses="MIT"
 
-LABEL maintainer="Arash Hatami <hatamiarash7@gmail.com>"
-LABEL org.opencontainers.image.created=$DATE_CREATED
-LABEL org.opencontainers.image.version=$APP_VERSION
-LABEL org.opencontainers.image.authors="hatamiarash7"
-LABEL org.opencontainers.image.vendor="hatamiarash7"
-LABEL org.opencontainers.image.title="Coming Soon"
-LABEL org.opencontainers.image.description="Coming soon template"
-LABEL org.opencontainers.image.source="https://github.com/hatamiarash7/coming-soon"
+ENV NGINX_PORT=8080 \
+    PAGE_TITLE="Coming Soon" \
+    NGINX_ENVSUBST_OUTPUT_DIR=/tmp \
+    NGINX_ENVSUBST_FILTER="^(NGINX_PORT|ESCAPED_TITLE)$"
 
-# Copy static files and set permissions
-COPY ./src/ /usr/share/nginx/html/
-COPY ./config/default.conf.template /etc/nginx/templates/default.conf.template
+COPY config/nginx.conf /etc/nginx/nginx.conf
+COPY config/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --chmod=755 config/15-page.envsh /docker-entrypoint.d/15-page.envsh
+COPY src/ /srv/coming-soon/
 
-# Fix permissions for Nginx directories before switching user
-RUN mkdir -p /run/nginx \
-    && chown -R ${NGINX_USER}:${NGINX_USER} /usr/share/nginx/html \
-    && chown -R ${NGINX_USER}:${NGINX_USER} /etc/nginx/templates \
-    && chown -R ${NGINX_USER}:${NGINX_USER} /etc/nginx/conf.d \
-    && chown -R ${NGINX_USER}:${NGINX_USER} /var/cache/nginx \
-    && chown -R ${NGINX_USER}:${NGINX_USER} /run/nginx \
-    && chmod -R 755 /usr/share/nginx/html /etc/nginx/templates /etc/nginx/conf.d /var/cache/nginx /run/nginx
-
-# Healthcheck for Nginx (uses NGINX_PORT env, defaults to 80)
+USER 101:101
+EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget -q --spider http://127.0.0.1:${NGINX_PORT:-80}/ || exit 1
-
-CMD ["nginx", "-g", "daemon off;"]
+    CMD ["sh", "-c", "exec wget -Y off -q --spider \"http://127.0.0.1:${NGINX_PORT}/\""]

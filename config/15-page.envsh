@@ -1,0 +1,19 @@
+#!/bin/sh
+# Sourced by the upstream entrypoint before envsubst renders the server block.
+case "$NGINX_PORT" in
+'' | *[!0-9]*)
+	echo 'NGINX_PORT must be a number from 1 to 65535' >&2
+	exit 1
+	;;
+esac
+if ! [ "$NGINX_PORT" -ge 1 ] || ! [ "$NGINX_PORT" -le 65535 ]; then
+	echo 'NGINX_PORT must be a number from 1 to 65535' >&2
+	exit 1
+fi
+
+# The value passes through a quoted Nginx argument and HTML title text.
+# Encode metacharacters from both contexts; never interpret a title as config.
+ESCAPED_TITLE=$(printf '%s' "${PAGE_TITLE:-Coming Soon}" | tr '\r\n' '  ' | sed \
+	-e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \
+	-e "s/'/\&#39;/g" -e 's/"/\&quot;/g' -e 's/\$/\&#36;/g' -e 's/\\/\&#92;/g')
+export ESCAPED_TITLE
