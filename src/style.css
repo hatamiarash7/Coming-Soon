@@ -1,0 +1,52 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  color: #fff6e9;
+  background: #11192b;
+}
+
+body {
+  box-sizing: border-box;
+  min-block-size: 100vh;
+  min-block-size: 100dvh;
+  margin: 0;
+  padding: 3rem 1.25rem clamp(9rem, 26vh, 18rem);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.5;
+  background:
+    url("/horizon.svg") center bottom / 100% auto no-repeat,
+    radial-gradient(ellipse at 50% 110%, #674458, #20283f 52%, #11192b 86%);
+}
+
+main {
+  min-inline-size: 0;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffd3ac;
+}
+
+h1 {
+  margin: 0.18em 0;
+  font:
+    normal clamp(3rem, 1.8rem + 6vw, 7.5rem)/1.08 Georgia,
+    serif;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.message {
+  max-inline-size: 36ch;
+  margin: 1.2em auto 0;
+  font-size: 1.125rem;
+  color: #e1dfeb;
+  text-wrap: pretty;
+}
